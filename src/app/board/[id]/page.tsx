@@ -7,10 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, RotateCcw, Play } from 'lucide-react';
-
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store';
+import { useRouter, useParams } from 'next/navigation';
 export default function Home() {
     const [game, setGame] = useState(new Chess());
-    const [pgn, setPgn] = useState('');
+    const { id } = useParams();
+    const games = useSelector((state: RootState) => state.games.games);
+    const [pgn, setPgn] = useState(games[parseInt(id as string, 10) || 0]?.pgn || '');
     const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
     const [moves, setMoves] = useState<string[]>([]);
     const [fen, setFen] = useState(game.fen());
@@ -41,10 +45,21 @@ export default function Home() {
             console.error('Invalid PGN:', error);
         }
     }, [pgn]);
-
+    function extractMoves(pgn: string) {
+        const moves = pgn
+            .replace(/\[.*?\]/g, '') // Remove all the metadata (e.g., Event, Date)
+            .replace(/(\d+\.\s*)/g, '') // Remove move numbers
+            .replace(/\{.*?\}/g, '') // Remove annotations and comments
+            .replace(/\.\./g, '') // Remove the dots between moves
+            .replace(/\s+/g, ' ') // Normalize spaces between moves to single space
+            .replace(/\s*1-0\s*$/, '') // Remove the result at the end (e.g., 1-0)
+            .trim(); // Remove leading/trailing spaces
+        return moves;
+    }
     const getFenFromMove = useCallback((moveIndex: number) => {
         const newGame = new Chess();
-        const movesOnlyPgn = pgn.replace(/\d+\.\s*/g, ''); // Remove move numbers
+        const movesOnlyPgn = extractMoves(pgn);
+        console.log(movesOnlyPgn);
         const trimmedPgn = movesOnlyPgn.split(' ').slice(0, moveIndex + 1).join(' '); // Trim PGN up to the desired move index
         newGame.loadPgn(trimmedPgn);
         return newGame.fen();

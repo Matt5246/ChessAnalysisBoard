@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, Rocket } from "lucide-react";
 import { useTheme } from "next-themes";
-
+import { useDispatch, useSelector } from "react-redux";
+import { setGames } from "@/lib/features/games/games.slice";
+import { RootState } from "@/lib/store";
 async function fetchChessComGames(username: string, year: number, month: number) {
     const url = `https://api.chess.com/pub/player/${username}/games/${year}/${month}`;
     const response = await fetch(url);
@@ -19,21 +21,21 @@ async function fetchChessComGames(username: string, year: number, month: number)
 export default function Home() {
     const [mounted, setMounted] = useState(false);
     const { theme, setTheme } = useTheme();
-    const [games, setGames] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [username, setUsername] = useState("hikaru");
     const [year, setYear] = useState(2024);
     const [month, setMonth] = useState(12);
-
+    const dispatch = useDispatch();
+    const games = useSelector((state: RootState) => state.games.games);
     useEffect(() => {
         setMounted(true);
     }, []);
-
+    console.log(games);
     const fetchPlayerData = async () => {
         try {
             const data = await fetchChessComGames(username, year, month);
             console.log(data);
-            setGames(data.games || []);
+            dispatch(setGames(data.games || []));
             setError(null);
         } catch (err) {
             setError("Failed to fetch player data. Please try again later.");
@@ -103,14 +105,12 @@ export default function Home() {
                                             {game.black.result}
                                         </p>
                                         <p>
-                                            <a
-                                                href={game.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                            <Link
+                                                href={`/board/${index}`}
                                                 className="text-blue-500 hover:underline"
                                             >
                                                 View Game
-                                            </a>
+                                            </Link>
                                         </p>
                                     </li>
                                 ))}
