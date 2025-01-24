@@ -13,7 +13,7 @@ import {
   Settings2,
   SquareTerminal,
 } from "lucide-react"
-
+import { BiSolidChess as Chessboard } from "react-icons/bi";
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
@@ -36,7 +36,7 @@ const data = {
   },
   navMain: [
     {
-      title: "Playground",
+      title: "Chess Analysis",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
@@ -46,7 +46,7 @@ const data = {
           url: "#",
         },
         {
-          title: "Starred",
+          title: "Starred/saved",
           url: "#",
         },
         {
@@ -56,26 +56,26 @@ const data = {
       ],
     },
     {
-      title: "Models",
+      title: "Position editor",
       url: "#",
-      icon: Bot,
+      icon: Chessboard,
       items: [
         {
-          title: "Genesis",
+          title: "Editor",
           url: "#",
         },
         {
-          title: "Explorer",
+          title: "Export",
           url: "#",
         },
         {
-          title: "Quantum",
+          title: "Import",
           url: "#",
         },
       ],
     },
     {
-      title: "Documentation",
+      title: "Game evaluation",
       url: "#",
       icon: BookOpen,
       items: [
@@ -91,10 +91,6 @@ const data = {
           title: "Tutorials",
           url: "#",
         },
-        {
-          title: "Changelog",
-          url: "#",
-        },
       ],
     },
     {
@@ -107,15 +103,15 @@ const data = {
           url: "#",
         },
         {
-          title: "Team",
+          title: "Board",
           url: "#",
         },
         {
-          title: "Billing",
+          title: "Display",
           url: "#",
         },
         {
-          title: "Limits",
+          title: "Page",
           url: "#",
         },
       ],
@@ -135,19 +131,9 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
+      name: "Page design",
       url: "#",
       icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 }
@@ -164,7 +150,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Command className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Acme Inc</span>
+                  <span className="truncate font-semibold">Chess Analysis Inc</span>
                   <span className="truncate text-xs">Enterprise</span>
                 </div>
               </a>
