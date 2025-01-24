@@ -42,20 +42,23 @@ export default function Home() {
         }
     }, [pgn]);
 
+    const getFenFromMove = useCallback((moveIndex: number) => {
+        const newGame = new Chess();
+        const movesOnlyPgn = pgn.replace(/\d+\.\s*/g, ''); // Remove move numbers
+        const trimmedPgn = movesOnlyPgn.split(' ').slice(0, moveIndex + 1).join(' '); // Trim PGN up to the desired move index
+        newGame.loadPgn(trimmedPgn);
+        return newGame.fen();
+    }, [pgn]);
+
     const goToMove = useCallback((index: number) => {
-        for (let i = 0; i <= index; i++) {
-            console.log(moves[i]);
-        }
-        console.log(index);
         setCurrentMoveIndex(index);
-        setFen(game.fen());
-    }, [pgn, moves]);
+        setFen(getFenFromMove(index)); // Update FEN when moving to a specific move
+    }, [getFenFromMove]);
 
     const nextMove = useCallback(() => {
         if (currentMoveIndex < moves.length - 1) {
             goToMove(currentMoveIndex + 1);
         }
-
     }, [currentMoveIndex, moves.length, goToMove]);
 
     const previousMove = useCallback(() => {
@@ -68,8 +71,7 @@ export default function Home() {
         const newGame = new Chess();
         setGame(newGame);
         setMoves([]);
-        setCurrentMoveIndex(0);
-        setFen(newGame.fen());
+        setCurrentMoveIndex(-1);
         setPgn('');
     }, []);
 
@@ -124,7 +126,6 @@ export default function Home() {
                                 <Textarea
                                     placeholder="Paste your PGN here..."
                                     value={pgn}
-                                    defaultValue='1. e4 e5 2. d4 d5 3. Nf3 Nc6'
                                     onChange={(e) => setPgn(e.target.value)}
                                     className="h-[200px] font-mono"
                                 />
@@ -140,10 +141,10 @@ export default function Home() {
                                 <p className="text-gray-600">Example: 1. e4 e5 2. d4 d5 3. Nf3 Nc6</p>
                                 <Button
                                     variant="outline"
-                                    onClick={() => navigator.clipboard.writeText('1. e4 e5 2. d4 d5 3. Nf3 Nc6')}
+                                    onClick={() => { setPgn('1. e4 e5 2. d4 d5 3. Nf3 Nc6') }}
                                     className="ml-4"
                                 >
-                                    Copy
+                                    Use
                                 </Button>
                             </div>
                         </Card>
