@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from '@/components/app-sidebar'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -6,20 +6,18 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator"
+} from '@/components/ui/breadcrumb'
+import { Separator } from '@/components/ui/separator'
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Moon, Sun } from "lucide-react";
+} from '@/components/ui/sidebar'
 
-import { ReactNode } from "react";
+import { ReactNode } from 'react'
 
 interface PageProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export default function Page({ children }: PageProps) {
@@ -46,9 +44,7 @@ export default function Page({ children }: PageProps) {
             </Breadcrumb>
           </div>
         </header>
-        <div className="p-5">
-          {children}
-        </div>
+        <div className="p-5">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )

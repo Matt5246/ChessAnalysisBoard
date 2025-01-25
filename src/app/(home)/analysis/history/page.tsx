@@ -8,77 +8,73 @@ import { Spinner } from '@/components/ui/spinner'
 import { getPlayerGames } from '@/lib/queries'
 import GameHistoryList from './GameHistoryList'
 
-
-
-
 export default function History() {
-    const [mounted, setMounted] = useState(false)
-    const [username, setUsername] = useState('hikaru')
-    const [month, setMonth] = useState(12)
-    const [year, setYear] = useState(2024)
+  const [mounted, setMounted] = useState(false)
+  const [username, setUsername] = useState('hikaru')
+  const [month, setMonth] = useState(12)
+  const [year, setYear] = useState(2024)
 
-    const { data, refetch, isLoading, error } = useQuery({
-        queryKey: ['player-games', username, month, year],
-        queryFn: () => getPlayerGames({ username, month, year }),
-        enabled: false,
-        refetchOnWindowFocus: false,
-        staleTime: 1000 * 60 * 5,
-        gcTime: 1000 * 60 * 60 * 24,
-    })
-    console.log(data)
-    useEffect(() => {
-        setMounted(true)
-    }, [])
+  const { data, refetch, isLoading, error } = useQuery({
+    queryKey: ['player-games', username, month, year],
+    queryFn: () => getPlayerGames({ username, month, year }),
+    enabled: false,
+    refetchOnWindowFocus: false,
+  })
 
-    if (!mounted) return null
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-    const handleAddToStarred = async (game: ChessGame) => {
-        console.log(game)
-        console.log('Adding to starred.')
+  if (!mounted) return null
 
-        await db.chessGames.add(game)
-    }
+  const handleAddToStarred = async (game: ChessGame) => {
+    console.log(game)
+    console.log('Adding to starred.')
 
-    return (
-        <main className="flex-1 flex flex-col items-center">
-            <section className="w-full py-12">
-                <div className="container px-4 md:px-6 max-w-7xl mx-auto">
-                    <h1 className="text-3xl font-bold mb-6">Player Games</h1>
-                    <div className="mb-6">
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Username"
-                            className="border p-2 mr-2"
-                        />
-                        <input
-                            type="number"
-                            value={year}
-                            onChange={(e) => setYear(Number(e.target.value))}
-                            placeholder="Year"
-                            className="border p-2 mr-2"
-                        />
-                        <input
-                            type="number"
-                            value={month}
-                            onChange={(e) => setMonth(Number(e.target.value))}
-                            placeholder="Month"
-                            className="border p-2 mr-2"
-                        />
-                        <Button onClick={() => refetch()}>
-                            {isLoading ? <Spinner /> : 'Fetch Games'}
-                        </Button>
-                    </div>
+    await db.chessGames.add(game)
+  }
 
-                    {data && data.games.length > 0 ? (
-                        <GameHistoryList games={data.games} />
+  return (
+    <main className="flex-1 flex flex-col items-center">
+      <section className="w-full py-12">
+        <div className="container px-4 md:px-6 max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Player Games</h1>
+          <div className="mb-6">
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
+              className="border p-2 mr-2"
+            />
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              placeholder="Year"
+              className="border p-2 mr-2"
+            />
+            <input
+              type="number"
+              value={month}
+              onChange={(e) => setMonth(Number(e.target.value))}
+              placeholder="Month"
+              className="border p-2 mr-2"
+            />
+            <Button onClick={() => refetch()}>
+              {isLoading ? <Spinner /> : 'Fetch Games'}
+            </Button>
+          </div>
 
-                    ) : (
-                        <div className="text-center text-gray-400">No games found.</div>
-                    )}
-                </div>
-            </section>
-        </main >
-    )
+          {data && data.games.length > 0 ? (
+            <GameHistoryList games={data.games} />
+          ) : (
+            <div className="text-center text-gray-400">
+              No games found.
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  )
 }
