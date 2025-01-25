@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Clock, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Chessboard } from 'react-chessboard'
 
 interface Game {
     id: string
@@ -37,7 +38,9 @@ interface Game {
 }
 
 const GameHistoryList = ({ games }: { games: Game[] }) => {
-    games.sort((a, b) => b.end_time - a.end_time)
+    // Sort games by end time
+    const sortedGames = [...games].sort((a, b) => b.end_time - a.end_time);
+
     return (
         <div className="w-full min-h-screen p-6 bg-background text-foreground">
             <div className="max-w-7xl mx-auto">
@@ -49,8 +52,8 @@ const GameHistoryList = ({ games }: { games: Game[] }) => {
                     <div>Moves</div>
                     <div>Date</div>
                 </div>
-                <div className="space-y-px rounded-lg overflow-hidden">
-                    {games.map((game: Game) => (
+                <div className="space-y-px rounded-lg">
+                    {sortedGames.map((game: Game) => (
                         <div
                             key={game.id}
                             className="grid grid-cols-[1fr_100px_120px_80px_120px] gap-4 px-4 py-3 items-center relative rounded-lg bg-muted group hover:bg-accent transition-colors duration-200"
@@ -67,7 +70,7 @@ const GameHistoryList = ({ games }: { games: Game[] }) => {
                                     <span className="text-muted-foreground">({game.black.rating})</span>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-center font-medium space-y-1.5">
+                            <div className="flex flex-col font-medium ml-5">
                                 <span className={cn(
                                     game.white.result === "win" ? "text-green-500" : "text-red-500",
                                     "dark:text-green-400 dark:text-red-400"
@@ -81,9 +84,9 @@ const GameHistoryList = ({ games }: { games: Game[] }) => {
                                     {game.black.result === "win" ? "1" : "0"}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="ml-5">
                                 {game.accuracies ? (
-                                    <div className="flex flex-col items-end space-y-1.5">
+                                    <div className="flex flex-col">
                                         <span className="text-primary">{game.accuracies.white.toFixed(1)}</span>
                                         <span className="text-primary">{game.accuracies.black.toFixed(1)}</span>
                                     </div>
@@ -96,7 +99,7 @@ const GameHistoryList = ({ games }: { games: Game[] }) => {
                                     </Button>
                                 )}
                             </div>
-                            <div className="text-center">
+                            <div className="ml-3">
                                 {parseInt(game.pgn.trim().split(/\s+/).reverse().find(move => /^\d+\.$/.test(move))?.replace('.', '') || '0', 10)}
                             </div>
                             <div className="flex items-center gap-2">
@@ -104,13 +107,14 @@ const GameHistoryList = ({ games }: { games: Game[] }) => {
                                     {new Date(game.end_time * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                                 </span>
                                 {game.type === "bullet" ? (
-                                    <Zap className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
+                                    <Zap className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                                 ) : (
-                                    <Clock className="w-4 h-4 text-primary" />
+                                    <Clock className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                                 )}
                             </div>
                             <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                                bg-gradient-to-b from-accent/50 to-transparent" />
+                                bg-gradient-to-b from-accent/70 to-transparent" />
+
                         </div>
                     ))}
                 </div>
@@ -119,4 +123,4 @@ const GameHistoryList = ({ games }: { games: Game[] }) => {
     )
 }
 
-export default GameHistoryList
+export default GameHistoryList;
