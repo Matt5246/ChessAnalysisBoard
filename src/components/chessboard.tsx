@@ -21,7 +21,7 @@ export default function ChessAnalysis() {
     const loadPgn = () => {
         if (!game) return;
         const newGame = new Chess();
-        if (newGame.loadPgn(pgn)) {
+        if (newGame.loadPgn(pgn)!) {
             setGame(newGame);
             setError(null);
         } else {
