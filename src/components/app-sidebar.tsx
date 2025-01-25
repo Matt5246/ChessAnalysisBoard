@@ -58,11 +58,11 @@ const data: {
       items: [
         {
           title: "History",
-          url: "#",
+          url: "/analysis/history",
         },
         {
           title: "Starred/saved",
-          url: "#",
+          url: "/analysis/starred",
         },
         {
           title: "Settings",
