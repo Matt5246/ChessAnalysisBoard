@@ -7,6 +7,7 @@ import {
   Command,
   Frame,
   LifeBuoy,
+  LucideIcon,
   Map,
   PieChart,
   Send,
@@ -28,7 +29,21 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const data = {
+
+interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon | any;
+  isActive?: boolean;
+  items?: { title: string; url: string }[];
+}
+
+const data: {
+  user: { name: string; email: string; avatar: string };
+  navMain: NavItem[];
+  navSecondary: { title: string; url: string; icon: LucideIcon }[];
+  projects: { name: string; url: string; icon: LucideIcon }[];
+} = {
   user: {
     name: "shadcn",
     email: "m@example.com",
@@ -37,7 +52,7 @@ const data = {
   navMain: [
     {
       title: "Chess Analysis",
-      url: "#",
+      url: "/analysis",
       icon: SquareTerminal,
       isActive: true,
       items: [
@@ -57,7 +72,7 @@ const data = {
     },
     {
       title: "Position editor",
-      url: "#",
+      url: "/position-editor",
       icon: Chessboard,
       items: [
         {
