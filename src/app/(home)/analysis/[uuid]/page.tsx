@@ -1,232 +1,130 @@
-'use client'
+'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Card } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight, RotateCcw, Play } from 'lucide-react'
-import { db } from '@/lib/db'
-import { useParams } from 'next/navigation'
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { Chess } from 'chess.js';
+import Chessboard from '@/components/Chessboard';
+import { db } from '@/lib/db';
+import { useParams } from 'next/navigation';
+import MoveList from '@/components/MoveList';
 
-export default function Home() {
-    const [game, setGame] = useState(new Chess())
-    const [pgn, setPgn] = useState('')
-    const [currentMoveIndex, setCurrentMoveIndex] = useState(0)
-    const [moves, setMoves] = useState<string[]>([])
-    const [fen, setFen] = useState(game.fen())
-    const boardContainerRef = useRef<HTMLDivElement>(null)
-    const [boardWidth, setBoardWidth] = useState(400)
-    const { uuid } = useParams()
+const Home: React.FC = () => {
+    const [game, setGame] = useState(() => new Chess());
+    const [pgn, setPgn] = useState('');
+    const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+    const [fen, setFen] = useState(game.fen());
+    const { uuid } = useParams();
 
-    const fetchGameByUuid = async (uuid: string) => {
-        console.log(uuid)
-        try {
-            const gameData = await db.chessGames.get(uuid)
-            console.log(gameData)
-            return gameData
-        } catch (error) {
-            console.error('Error fetching game data:', error)
-            return null
+    const moves = useMemo(() => {
+        return game.history();
+    }, [game]);
+
+    const times = useMemo(() => {
+        if (!pgn) return [];
+        const timeRegex = /\[%clk\s*([0-9]+:[0-9]+:[0-9]+(?:\.[0-9]+)?)\]/g;
+        const times: string[] = [];
+        let match;
+        while ((match = timeRegex.exec(pgn)) !== null) {
+            times.push(match[1]);
         }
-    }
+        return times;
+    }, [pgn]);
+
+    const fetchGameByUuid = useCallback(async (uuid: string) => {
+        try {
+            const gameData = await db.chessGames.get(uuid);
+            return gameData;
+        } catch (error) {
+            console.error('Error fetching game data:', error);
+            return null;
+        }
+    }, []);
 
     useEffect(() => {
-        const updateBoardWidth = () => {
-            if (boardContainerRef.current) {
-                const containerWidth = boardContainerRef.current.offsetWidth - 48
-                setBoardWidth(containerWidth)
-            }
-        }
-
         const loadGame = async () => {
-            if (uuid) {
-                const gameData = await fetchGameByUuid(uuid as string)
-                if (gameData) {
-                    setPgn(gameData.pgn) // Set PGN from fetched game
-                    const newGame = new Chess()
-                    newGame.loadPgn(gameData.pgn) // Load PGN into chess.js
-                    setGame(newGame)
-                    setMoves(newGame.history())
-                    setCurrentMoveIndex(0)
-                    setFen(newGame.fen())
-                }
-                console.log(gameData)
+            if (!uuid) return;
+
+            const gameData = await fetchGameByUuid(uuid as string);
+            if (gameData) {
+                const newGame = new Chess();
+                newGame.loadPgn(gameData.pgn);
+                setGame(newGame);
+                setPgn(gameData.pgn);
+                setCurrentMoveIndex(0);
+                setFen(newGame.fen());
             }
-        }
+        };
 
-        loadGame()
-        updateBoardWidth()
-        window.addEventListener('resize', updateBoardWidth)
-        return () => window.removeEventListener('resize', updateBoardWidth)
-    }, [uuid])
-
-    const loadPgn = useCallback(() => {
-        try {
-            const newGame = new Chess()
-            newGame.loadPgn(pgn)
-            setGame(newGame)
-            setMoves(newGame.history())
-            setCurrentMoveIndex(0)
-            setFen(newGame.fen())
-        } catch (error) {
-            console.error('Invalid PGN:', error)
-        }
-    }, [pgn])
-
-    function extractMoves(pgn: string) {
-        const moves = pgn
-            .replace(/\[.*?\]/g, '') // Remove all the metadata (e.g., Event, Date)
-            .replace(/(\d+\.\s*)/g, '') // Remove move numbers
-            .replace(/\{.*?\}/g, '') // Remove annotations and comments
-            .replace(/\.\./g, '') // Remove the dots between moves
-            .replace(/\s+/g, ' ') // Normalize spaces between moves to single space
-            .replace(/\s*1-0\s*$/, '') // Remove the result at the end (e.g., 1-0)
-            .trim() // Remove leading/trailing spaces
-        return moves
-    }
+        loadGame();
+    }, [uuid, fetchGameByUuid]);
 
     const getFenFromMove = useCallback(
         (moveIndex: number) => {
-            const newGame = new Chess()
-            const movesOnlyPgn = extractMoves(pgn)
-            const trimmedPgn = movesOnlyPgn
-                .split(' ')
-                .slice(0, moveIndex + 1)
-                .join(' ') // Trim PGN up to the desired move index
-            newGame.loadPgn(trimmedPgn)
-            return newGame.fen()
+            const newGame = new Chess();
+            const movesOnly = pgn
+                .replace(/\[.*?\]/g, '')
+                .replace(/(\d+\.\s*)/g, '')
+                .replace(/\{.*?\}/g, '')
+                .replace(/\.\./g, '')
+                .replace(/\s+/g, ' ')
+                .replace(/\s*1-0\s*$/, '')
+                .trim();
+            const trimmedPgn = movesOnly.split(' ').slice(0, moveIndex + 1).join(' ');
+            newGame.loadPgn(trimmedPgn);
+            return newGame.fen();
         },
         [pgn]
-    )
+    );
 
     const goToMove = useCallback(
         (index: number) => {
-            setCurrentMoveIndex(index)
-            setFen(getFenFromMove(index)) // Update FEN when moving to a specific move
+            setCurrentMoveIndex(index);
+            setFen(getFenFromMove(index));
         },
         [getFenFromMove]
-    )
+    );
 
     const nextMove = useCallback(() => {
         if (currentMoveIndex < moves.length - 1) {
-            goToMove(currentMoveIndex + 1)
+            goToMove(currentMoveIndex + 1);
         }
-    }, [currentMoveIndex, moves.length, goToMove])
+    }, [currentMoveIndex, moves.length, goToMove]);
 
     const previousMove = useCallback(() => {
         if (currentMoveIndex > 0) {
-            goToMove(currentMoveIndex - 1)
+            goToMove(currentMoveIndex - 1);
         }
-    }, [currentMoveIndex, goToMove])
+    }, [currentMoveIndex, goToMove]);
 
     const resetBoard = useCallback(() => {
-        const newGame = new Chess()
-        setGame(newGame)
-        setMoves([])
-        setCurrentMoveIndex(-1)
-        setPgn('')
-    }, [])
+        setCurrentMoveIndex(-1);
+        setFen(getFenFromMove(-1));
+    }, [getFenFromMove]);
 
     return (
-        <div className="min-h-screen bg-background p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="bg-background p-4 md:p-8">
+            <div className="max-w-9xl mx-auto space-y-8">
                 <h1 className="text-3xl md:text-4xl font-bold text-center mb-8">
                     Chess Analysis Board
                 </h1>
-
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-6">
-                        <Card className="p-6" ref={boardContainerRef}>
-                            <div className="aspect-square w-full">
-                                <Chessboard
-                                    position={fen}
-                                    boardWidth={boardWidth}
-                                    areArrowsAllowed={true}
-                                    customBoardStyle={{
-                                        borderRadius: '4px',
-                                        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-                                    }}
-                                />
-                            </div>
-                        </Card>
-
-                        <div className="flex justify-center gap-4">
-                            <Button
-                                variant="outline"
-                                onClick={previousMove}
-                                disabled={currentMoveIndex === 0}
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-
-                            <Button variant="outline" onClick={resetBoard}>
-                                <RotateCcw className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={nextMove}
-                                disabled={currentMoveIndex === moves.length - 1}
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
+                        <Chessboard fen={fen} />
                     </div>
-
                     <div className="space-y-6">
-                        <Card className="p-6">
-                            <h2 className="text-2xl font-semibold mb-4">PGN Input</h2>
-                            <div className="space-y-4">
-                                <Textarea
-                                    placeholder="Paste your PGN here..."
-                                    value={pgn}
-                                    onChange={(e) => setPgn(e.target.value)}
-                                    className="h-[200px] font-mono"
-                                />
-                                <Button onClick={loadPgn} className="w-full">
-                                    <Play className="h-4 w-4 mr-2" />
-                                    Load PGN
-                                </Button>
-                            </div>
-                            <div className="flex items-center justify-between mt-5">
-                                <p className="text-gray-600">
-                                    Example: 1. e4 e5 2. d4 d5 3. Nf3 Nc6
-                                </p>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setPgn('1. e4 e5 2. d4 d5 3. Nf3 Nc6')
-                                    }}
-                                    className="ml-4"
-                                >
-                                    Use
-                                </Button>
-                            </div>
-                        </Card>
-
-                        <Card className="p-6">
-                            <h2 className="text-2xl font-semibold mb-4">Move List</h2>
-                            <div className="grid grid-cols-2 gap-2">
-                                {moves.map((move, index) => (
-                                    <Button
-                                        key={index}
-                                        variant={
-                                            currentMoveIndex === index ? 'default' : 'outline'
-                                        }
-                                        onClick={() => goToMove(index)}
-                                        className="text-sm"
-                                    >
-                                        {Math.floor(index / 2) + 1}.
-                                        {index % 2 === 0 ? '' : '..'} {move}
-                                    </Button>
-                                ))}
-                            </div>
-                        </Card>
+                        <MoveList
+                            moves={moves}
+                            times={times}
+                            currentMoveIndex={currentMoveIndex}
+                            goToMove={goToMove}
+                            nextMove={nextMove}
+                            previousMove={previousMove}
+                            resetBoard={resetBoard}
+                        />
                     </div>
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
+
+export default Home;

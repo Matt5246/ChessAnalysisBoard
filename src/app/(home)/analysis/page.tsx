@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, RotateCcw, Play } from 'lucide-react'
+import MoveList from '@/components/MoveList'
 
 export default function Home() {
   const [game, setGame] = useState(new Chess())
@@ -171,25 +172,9 @@ export default function Home() {
                 </Button>
               </div>
             </Card>
-
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Move List</h2>
-              <div className="grid grid-cols-2 gap-2">
-                {moves.map((move, index) => (
-                  <Button
-                    key={index}
-                    variant={
-                      currentMoveIndex === index ? 'default' : 'outline'
-                    }
-                    onClick={() => goToMove(index)}
-                    className="text-sm"
-                  >
-                    {Math.floor(index / 2) + 1}.
-                    {index % 2 === 0 ? '' : '..'} {move}
-                  </Button>
-                ))}
-              </div>
-            </Card>
+            {moves.length > 0 && (
+              <MoveList moves={moves} currentMoveIndex={currentMoveIndex} goToMove={goToMove} />)
+            }
           </div>
         </div>
       </div>

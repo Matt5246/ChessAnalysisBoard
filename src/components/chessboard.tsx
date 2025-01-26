@@ -1,82 +1,166 @@
-'use client';
-import { useState, useEffect } from "react";
-import { Chess } from "chess.js";
-import { Chessboard } from "react-chessboard";
+//@ts-nocheck
+'use client'
 
-export default function ChessAnalysis() {
-    const [game, setGame] = useState<Chess | null>(null);
-    const [pgn, setPgn] = useState(""); // PGN input
-    const [error, setError] = useState<string | null>(null);
-    const [isHydrated, setIsHydrated] = useState(false); // Tracks hydration status
+import { FC, useEffect, useMemo, useState } from 'react'
+import { Chessboard } from 'react-chessboard'
+import { Chess } from 'chess.js'
+
+interface ChessboardComponentProps {
+    fen: string
+}
+
+const ChessboardComponent: FC<ChessboardComponentProps> = ({ fen }) => {
+    const [game, setGame] = useState(new Chess(fen))
+    const [moveFrom, setMoveFrom] = useState<string>("")
+    const [moveTo, setMoveTo] = useState<any | null>(null)
+    const [optionSquares, setOptionSquares] = useState<Record<string, any>>({})
+    const [rightClickedSquares, setRightClickedSquares] = useState<Record<string, any>>({})
+    const [showPromotionDialog, setShowPromotionDialog] = useState(false)
 
     useEffect(() => {
-        setIsHydrated(true);
-        setGame(new Chess());
-    }, []);
+        setGame(new Chess(fen))
+    }, [fen])
 
-    const handlePgnInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setPgn(event.target.value);
-    };
+    const safeGameMutate = (modify: (game: Chess) => void) => {
+        setGame((g) => {
+            const updatedGame = new Chess(g.fen()) // Ensure it's a Chess instance
+            modify(updatedGame)
+            return updatedGame
+        })
+    }
 
-    const loadPgn = () => {
-        if (!game) return;
-        const newGame = new Chess();
-        if (newGame.loadPgn(pgn)!) {
-            setGame(newGame);
-            setError(null);
-        } else {
-            setError("Invalid PGN format. Please check the input.");
+    const getMoveOptions = (square: string) => {
+        const moves = game.moves({ square, verbose: true })
+        if (moves.length === 0) {
+            setOptionSquares({})
+            return false
         }
-    };
 
-    const handleMove = (sourceSquare: string, targetSquare: string) => {
-        if (!game) return;
-        const newGame = new Chess(game.fen());
-        const move = newGame.move({ from: sourceSquare, to: targetSquare });
+        const newSquares: Record<string, any> = {}
 
-        if (move) {
-            setGame(newGame);
+        moves.forEach((move) => {
+            newSquares[move.to] = {
+                background: game.get(move.to) && game.get(move.to).color !== game.get(square).color
+                    ? "radial-gradient(circle, rgba(0,0,0,.1) 85%, transparent 85%)"
+                    : "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
+                borderRadius: "50%",
+            }
+        })
+
+        newSquares[square] = {
+            background: "rgba(255, 255, 0, 0.4)",
+            boxShadow: "0 0 10px rgba(255, 255, 0, 0.7)", // Highlight selected square
         }
-    };
 
-    if (!isHydrated || !game) return null; // Avoid rendering until hydrated
+        setOptionSquares(newSquares)
+        return true
+    }
+
+    const onSquareClick = (square: string) => {
+        setRightClickedSquares({})
+
+        if (!moveFrom) {
+            // If no piece is selected, select the piece
+            const hasMoveOptions = getMoveOptions(square)
+            if (hasMoveOptions) setMoveFrom(square)
+            return
+        }
+
+        if (!moveTo) {
+            // Check if valid move
+            const moves = game.moves({ verbose: true })
+            const foundMove = moves.find((move) => move.from === moveFrom && move.to === square)
+            if (!foundMove) {
+                const hasMoveOptions = getMoveOptions(square)
+                if (hasMoveOptions) setMoveFrom(square)
+                return
+            }
+            setMoveTo(square)
+
+            // If promotion move, show promotion dialog
+            if ((foundMove.color === "w" && foundMove.piece === "p" && square[1] === "8") ||
+                (foundMove.color === "b" && foundMove.piece === "p" && square[1] === "1")) {
+                setShowPromotionDialog(true)
+                return
+            }
+
+            // Normal move
+            const gameCopy = new Chess(game.fen()) // Properly clone the game
+            const moveResult = gameCopy.move({ from: moveFrom, to: square, promotion: "q" })
+            if (!moveResult) {
+                const hasMoveOptions = getMoveOptions(square)
+                if (hasMoveOptions) setMoveFrom(square)
+                return
+            }
+
+            setGame(gameCopy)
+            setMoveFrom("")
+            setMoveTo(null)
+            setOptionSquares({})
+            return
+        }
+    }
+
+    const onPromotionPieceSelect = (piece?: string) => {
+        if (piece && moveFrom && moveTo) {
+            const gameCopy = new Chess(game.fen()) // Properly clone the game
+            gameCopy.move({
+                from: moveFrom,
+                to: moveTo!,
+                promotion: piece?.toLowerCase() ?? "q"
+            })
+            setGame(gameCopy)
+        }
+        setMoveFrom("")
+        setMoveTo(null)
+        setShowPromotionDialog(false)
+        setOptionSquares({})
+    }
+
+
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-            <h1 className="text-2xl font-bold mb-4">Chess Analysis</h1>
-            <div className="flex flex-col md:flex-row gap-8">
-                <div>
-                    <Chessboard
-                        position={game.fen()}
-                        onPieceDrop={(sourceSquare, targetSquare) =>
-                            handleMove(sourceSquare, targetSquare)
-                        }
-                        customBoardStyle={{
-                            borderRadius: "8px",
-                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                        }}
-                    />
-                </div>
-                <div className="flex flex-col gap-4">
-                    <textarea
-                        value={pgn}
-                        onChange={handlePgnInput}
-                        placeholder="Paste PGN data here..."
-                        className="w-full h-40 p-2 border rounded-md"
-                    ></textarea>
-                    <button
-                        onClick={loadPgn}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                    >
-                        Load PGN
-                    </button>
-                    {error && <p className="text-red-500">{error}</p>}
-                    <h2 className="text-lg font-semibold mt-4">Game Info:</h2>
-                    <pre className="bg-gray-100 p-2 rounded-md text-sm">
-                        {game.pgn() || "No moves yet."}
-                    </pre>
-                </div>
-            </div>
+        <div>
+            <Chessboard
+                id="ClickToMove"
+                animationDuration={200}
+                arePiecesDraggable={false}
+                position={game.fen()}
+                onSquareClick={onSquareClick}
+                onPromotionPieceSelect={onPromotionPieceSelect}
+                customBoardStyle={{
+                    borderRadius: "4px",
+                    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)"
+                }}
+                customSquareStyles={{
+                    ...optionSquares,
+                    ...rightClickedSquares
+                }}
+                promotionToSquare={moveTo}
+                showPromotionDialog={showPromotionDialog}
+                customDarkSquareStyle={{
+                    backgroundColor: "#779952"
+                }}
+                customLightSquareStyle={{
+                    backgroundColor: "#edeed1"
+                }}
+            />
+            <button onClick={() => {
+                safeGameMutate((game) => game.reset())
+                setOptionSquares({})
+                setRightClickedSquares({})
+            }}>
+                Reset
+            </button>
+            <button onClick={() => {
+                safeGameMutate((game) => game.undo())
+                setOptionSquares({})
+                setRightClickedSquares({})
+            }}>
+                Undo
+            </button>
         </div>
-    );
+    )
 }
+
+export default ChessboardComponent
