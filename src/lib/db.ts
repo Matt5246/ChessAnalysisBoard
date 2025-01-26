@@ -8,7 +8,12 @@ interface ChessGame {
   tcn: string
   fen: string
   time_class: string
+  end_time: number
   rules: string
+  type: string
+  initial_setup: string
+  rated: boolean
+  time_control: string
   accuracies: {
     black: number
     white: number
@@ -30,12 +35,12 @@ interface ChessGame {
 }
 
 const db = new Dexie('ChessAnalyserDb') as Dexie & {
-  chessGames: EntityTable<ChessGame, 'id'>
+  chessGames: EntityTable<ChessGame, 'uuid'>
 }
 
 db.version(1).stores({
   chessGames:
-    '++id, uuid, url, pgn, tcn, fen, time_class, rules, accuracies, white, black', // primary key "id" (for the runtime!)
+    '++uuid, id, url, pgn, tcn, fen, time_class, rules, accuracies, white, black, end_time', 
 })
 
 export type { ChessGame }

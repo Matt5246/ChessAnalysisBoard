@@ -3,43 +3,22 @@
 import { Button } from '@/components/ui/button'
 import { Clock, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { db, ChessGame } from '@/lib/db'
+import { useRouter } from 'next/navigation'
 
-interface Game {
-  id: string
-  white: {
-    username: string
-    rating: number
-    uuid: string
-    result: string
-  }
-  black: {
-    username: string
-    rating: number
-    uuid: string
-    result: string
-  }
-  accuracies: {
-    white: number
-    black: number
-  }
-  type: string
-  end_time: number
-  fen: string
-  initial_setup: string
-  pgn: string
-  rated: boolean
-  rules: string
-  tcn: string
-  time_class: string
-  time_control: string
-  url: string
-  uuid: string
-}
 
-const GameHistoryList = ({ games }: { games: Game[] }) => {
-  // Sort games by end time
+
+const GameHistoryList = ({ games }: { games: ChessGame[] }) => {
   const sortedGames = [...games].sort((a, b) => b.end_time - a.end_time)
+  const router = useRouter()
+  console.log(sortedGames)
 
+
+  const handleAddToStarred = async (game: ChessGame) => {
+    console.log('Added to starred:', game)
+    await db.chessGames.add(game)
+    router.push(`/analysis/${game.uuid}`)
+  }
   return (
     <div className="w-full min-h-screen p-6 bg-background text-foreground">
       <div className="max-w-7xl mx-auto">
@@ -52,10 +31,11 @@ const GameHistoryList = ({ games }: { games: Game[] }) => {
           <div>Date</div>
         </div>
         <div className="space-y-px rounded-lg">
-          {sortedGames.map((game: Game) => (
+          {sortedGames.map((game: ChessGame) => (
             <div
               key={game.uuid}
               className="grid grid-cols-[1fr_100px_120px_80px_120px] gap-4 px-4 py-3 items-center relative rounded-lg bg-muted group hover:bg-accent transition-colors duration-200"
+              onClick={() => handleAddToStarred(game)}
             >
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2">

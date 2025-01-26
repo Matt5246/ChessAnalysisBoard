@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { db, ChessGame } from '@/lib/db'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { getPlayerGames } from '@/lib/queries'
@@ -27,12 +26,7 @@ export default function History() {
 
   if (!mounted) return null
 
-  const handleAddToStarred = async (game: ChessGame) => {
-    console.log(game)
-    console.log('Adding to starred.')
 
-    await db.chessGames.add(game)
-  }
 
   return (
     <main className="flex-1 flex flex-col items-center">
