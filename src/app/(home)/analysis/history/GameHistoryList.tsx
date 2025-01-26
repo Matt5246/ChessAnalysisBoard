@@ -6,13 +6,10 @@ import { cn } from '@/lib/utils'
 import { db, ChessGame } from '@/lib/db'
 import { useRouter } from 'next/navigation'
 
-
-
 const GameHistoryList = ({ games }: { games: ChessGame[] }) => {
   const sortedGames = [...games].sort((a, b) => b.end_time - a.end_time)
   const router = useRouter()
   console.log(sortedGames)
-
 
   const handleAddToStarred = async (game: ChessGame) => {
     console.log('Added to starred:', game)

@@ -1,7 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 
 interface ChessGame {
-  id: number //For some reason it needs it
   uuid: string
   url: string
   pgn: string
@@ -40,7 +39,7 @@ const db = new Dexie('ChessAnalyserDb') as Dexie & {
 
 db.version(1).stores({
   chessGames:
-    '++uuid, id, url, pgn, tcn, fen, time_class, rules, accuracies, white, black, end_time', 
+    'uuid, url, pgn, tcn, fen, time_class, rules, accuracies, white, black, end_time',
 })
 
 export type { ChessGame }
