@@ -14,7 +14,10 @@ const GameHistoryList = ({ games }: { games: ChessGame[] }) => {
 
   const handleAddToIndexDB = async (game: ChessGame) => {
     console.log('Added to starred:', game)
-    await db.chessGames.add(game)
+    const existingGame = await db.chessGames.get(game.uuid)
+    if (!existingGame) {
+      await db.chessGames.add(game)
+    }
     router.push(`/analysis/${game.uuid}`)
   }
   return (
