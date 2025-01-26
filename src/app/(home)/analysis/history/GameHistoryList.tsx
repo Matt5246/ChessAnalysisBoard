@@ -14,7 +14,7 @@ const GameHistoryList = ({ games }: { games: ChessGame[] }) => {
   console.log(sortedGames)
 
 
-  const handleAddToStarred = async (game: ChessGame) => {
+  const handleAddToIndexDB = async (game: ChessGame) => {
     console.log('Added to starred:', game)
     await db.chessGames.add(game)
     router.push(`/analysis/${game.uuid}`)
@@ -35,7 +35,7 @@ const GameHistoryList = ({ games }: { games: ChessGame[] }) => {
             <div
               key={game.uuid}
               className="grid grid-cols-[1fr_100px_120px_80px_120px] gap-4 px-4 py-3 items-center relative rounded-lg bg-muted group hover:bg-accent transition-colors duration-200"
-              onClick={() => handleAddToStarred(game)}
+              onClick={() => handleAddToIndexDB(game)}
             >
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2">

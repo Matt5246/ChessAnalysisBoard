@@ -31,6 +31,7 @@ export default function Home() {
         }
     };
 
+
     useEffect(() => {
         const updateBoardWidth = () => {
             if (boardContainerRef.current) {

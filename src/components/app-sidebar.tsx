@@ -45,8 +45,8 @@ const data: {
   projects: { name: string; url: string; icon: LucideIcon }[];
 } = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
+    name: "Szachowy Motor",
+    email: "szachowyMotor@gmail.com",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
@@ -61,8 +61,8 @@ const data: {
           url: "/analysis/history",
         },
         {
-          title: "Starred/saved",
-          url: "/analysis/starred",
+          title: "Last viewed",
+          url: "/analysis/last-viewed",
         },
         {
           title: "Settings",

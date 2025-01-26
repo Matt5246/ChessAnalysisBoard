@@ -40,7 +40,7 @@ const db = new Dexie('ChessAnalyserDb') as Dexie & {
 
 db.version(1).stores({
   chessGames:
-    '++uuid, id, url, pgn, tcn, fen, time_class, rules, accuracies, white, black, end_time', 
+    'uuid, url, pgn, tcn, fen, time_class, rules, accuracies, white, black, end_time', 
 })
 
 export type { ChessGame }
