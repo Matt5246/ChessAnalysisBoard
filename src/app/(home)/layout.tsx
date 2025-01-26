@@ -1,10 +1,11 @@
+'use client'
+
 import { AppSidebar } from '@/components/app-sidebar'
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
@@ -13,14 +14,18 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
-
-import { ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
+import { ReactNode, useEffect, useState } from 'react'
+import Link from 'next/link'
+import React from 'react'
 
 interface PageProps {
   children: ReactNode
 }
 
 export default function Page({ children }: PageProps) {
+  const path = usePathname()
+  const pathSegments = path.split('/').filter(segment => segment)
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -31,15 +36,22 @@ export default function Page({ children }: PageProps) {
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
+                {pathSegments.map((segment, index) => {
+                  const href = '/' + pathSegments.slice(0, index + 1).join('/')
+                  const isLast = index === pathSegments.length - 1
+                  return (
+                    <React.Fragment key={href}>
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                          <Link href={href}>
+                            {segment.charAt(0).toUpperCase() + segment.slice(1)}
+                          </Link>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      {!isLast && <BreadcrumbSeparator />}
+                    </React.Fragment>
+                  )
+                })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
