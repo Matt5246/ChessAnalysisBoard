@@ -21,16 +21,16 @@ export default function Home() {
     const { uuid } = useParams()
 
     const fetchGameByUuid = async (uuid: string) => {
+        console.log(uuid)
         try {
-            const gameData = await db.chessGames.get(uuid);
-            console.log(gameData);
-            return gameData;
+            const gameData = await db.chessGames.get(uuid)
+            console.log(gameData)
+            return gameData
         } catch (error) {
-            console.error('Error fetching game data:', error);
-            return null;
+            console.error('Error fetching game data:', error)
+            return null
         }
-    };
-
+    }
 
     useEffect(() => {
         const updateBoardWidth = () => {
@@ -42,38 +42,38 @@ export default function Home() {
 
         const loadGame = async () => {
             if (uuid) {
-                const gameData = await fetchGameByUuid(uuid as string);
+                const gameData = await fetchGameByUuid(uuid as string)
                 if (gameData) {
-                    setPgn(gameData.pgn); // Set PGN from fetched game
-                    const newGame = new Chess();
-                    newGame.loadPgn(gameData.pgn); // Load PGN into chess.js
-                    setGame(newGame);
-                    setMoves(newGame.history());
-                    setCurrentMoveIndex(0);
-                    setFen(newGame.fen());
+                    setPgn(gameData.pgn) // Set PGN from fetched game
+                    const newGame = new Chess()
+                    newGame.loadPgn(gameData.pgn) // Load PGN into chess.js
+                    setGame(newGame)
+                    setMoves(newGame.history())
+                    setCurrentMoveIndex(0)
+                    setFen(newGame.fen())
                 }
-                console.log(gameData);
+                console.log(gameData)
             }
-        };
+        }
 
-        loadGame();
-        updateBoardWidth();
-        window.addEventListener('resize', updateBoardWidth);
-        return () => window.removeEventListener('resize', updateBoardWidth);
-    }, [uuid]);
+        loadGame()
+        updateBoardWidth()
+        window.addEventListener('resize', updateBoardWidth)
+        return () => window.removeEventListener('resize', updateBoardWidth)
+    }, [uuid])
 
     const loadPgn = useCallback(() => {
         try {
-            const newGame = new Chess();
-            newGame.loadPgn(pgn);
-            setGame(newGame);
-            setMoves(newGame.history());
-            setCurrentMoveIndex(0);
-            setFen(newGame.fen());
+            const newGame = new Chess()
+            newGame.loadPgn(pgn)
+            setGame(newGame)
+            setMoves(newGame.history())
+            setCurrentMoveIndex(0)
+            setFen(newGame.fen())
         } catch (error) {
-            console.error('Invalid PGN:', error);
+            console.error('Invalid PGN:', error)
         }
-    }, [pgn]);
+    }, [pgn])
 
     function extractMoves(pgn: string) {
         const moves = pgn
@@ -83,51 +83,51 @@ export default function Home() {
             .replace(/\.\./g, '') // Remove the dots between moves
             .replace(/\s+/g, ' ') // Normalize spaces between moves to single space
             .replace(/\s*1-0\s*$/, '') // Remove the result at the end (e.g., 1-0)
-            .trim(); // Remove leading/trailing spaces
-        return moves;
+            .trim() // Remove leading/trailing spaces
+        return moves
     }
 
     const getFenFromMove = useCallback(
         (moveIndex: number) => {
-            const newGame = new Chess();
-            const movesOnlyPgn = extractMoves(pgn);
+            const newGame = new Chess()
+            const movesOnlyPgn = extractMoves(pgn)
             const trimmedPgn = movesOnlyPgn
                 .split(' ')
                 .slice(0, moveIndex + 1)
-                .join(' '); // Trim PGN up to the desired move index
-            newGame.loadPgn(trimmedPgn);
-            return newGame.fen();
+                .join(' ') // Trim PGN up to the desired move index
+            newGame.loadPgn(trimmedPgn)
+            return newGame.fen()
         },
         [pgn]
-    );
+    )
 
     const goToMove = useCallback(
         (index: number) => {
-            setCurrentMoveIndex(index);
-            setFen(getFenFromMove(index)); // Update FEN when moving to a specific move
+            setCurrentMoveIndex(index)
+            setFen(getFenFromMove(index)) // Update FEN when moving to a specific move
         },
         [getFenFromMove]
-    );
+    )
 
     const nextMove = useCallback(() => {
         if (currentMoveIndex < moves.length - 1) {
-            goToMove(currentMoveIndex + 1);
+            goToMove(currentMoveIndex + 1)
         }
-    }, [currentMoveIndex, moves.length, goToMove]);
+    }, [currentMoveIndex, moves.length, goToMove])
 
     const previousMove = useCallback(() => {
         if (currentMoveIndex > 0) {
-            goToMove(currentMoveIndex - 1);
+            goToMove(currentMoveIndex - 1)
         }
-    }, [currentMoveIndex, goToMove]);
+    }, [currentMoveIndex, goToMove])
 
     const resetBoard = useCallback(() => {
-        const newGame = new Chess();
-        setGame(newGame);
-        setMoves([]);
-        setCurrentMoveIndex(-1);
-        setPgn('');
-    }, []);
+        const newGame = new Chess()
+        setGame(newGame)
+        setMoves([])
+        setCurrentMoveIndex(-1)
+        setPgn('')
+    }, [])
 
     return (
         <div className="min-h-screen bg-background p-4 md:p-8">
@@ -197,7 +197,7 @@ export default function Home() {
                                 <Button
                                     variant="outline"
                                     onClick={() => {
-                                        setPgn('1. e4 e5 2. d4 d5 3. Nf3 Nc6');
+                                        setPgn('1. e4 e5 2. d4 d5 3. Nf3 Nc6')
                                     }}
                                     className="ml-4"
                                 >
