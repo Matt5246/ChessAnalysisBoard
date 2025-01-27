@@ -1,6 +1,6 @@
 'use client'
 
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
@@ -16,15 +16,10 @@ import { Switch } from './ui/switch'
 import { Label } from './ui/label'
 import { Cpu } from 'lucide-react'
 import useKey from '@/hooks/use-key'
+import { useParams } from 'next/navigation'
+import { useGameContext } from '@/context/GameContext'
 
 interface MoveListProps {
-    moves: string[]
-    times: string[] // Add times array
-    currentMoveIndex: number
-    goToMove: (index: number) => void
-    nextMove: () => void
-    previousMove: () => void
-    resetBoard: () => void
     bestMove?: {
         move: string
         score: number
@@ -33,15 +28,32 @@ interface MoveListProps {
 }
 
 const MoveList: FC<MoveListProps> = ({
-    moves,
-    times, // Destructure times
-    currentMoveIndex,
-    goToMove,
-    nextMove,
-    previousMove,
-    resetBoard,
     bestMove,
 }) => {
+    const { uuid } = useParams();
+    const {
+        game,
+        pgn,
+        currentMoveIndex,
+        fen,
+        moves,
+        times,
+        fetchGameByUuid,
+        goToMove,
+        nextMove,
+        previousMove,
+        resetBoard,
+    } = useGameContext();
+
+    useEffect(() => {
+        const loadGame = async () => {
+            if (!uuid) return;
+            await fetchGameByUuid(uuid as string);
+        };
+
+        loadGame();
+    }, [uuid]);
+
     const [engineEnabled, setEngineEnabled] = useState(false)
     const [depth, setDepth] = useState("15")
     const movesPairs = moves.reduce((pairs, move, index) => {

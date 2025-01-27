@@ -14,6 +14,20 @@ interface GameContextType {
     nextMove: () => void;
     previousMove: () => void;
     resetBoard: () => void;
+
+    moveFrom: string;
+    moveTo: string | null;
+    optionSquares: Record<string, any>;
+    rightClickedSquares: Record<string, any>;
+    setRightClickedSquares: (squares: Record<string, any>) => void;
+    showPromotionDialog: boolean;
+    onSquareClick: (square: string) => void;
+    onPromotionPieceSelect: (piece?: string) => void;
+    onPieceDragBegin: (piece: string, sourceSquare: string) => void;
+    onPieceDragEnd: () => void;
+    onPieceDrop: (sourceSquare: string, targetSquare: string) => boolean;
+    getMoveOptions: (square: string) => boolean;
+
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -28,6 +42,37 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
     const [fen, setFen] = useState(game.fen());
     const [moves, setMoves] = useState<string[]>([]);
+    const [moveFrom, setMoveFrom] = useState<string>("")
+    const [moveTo, setMoveTo] = useState<any | null>(null)
+    const [optionSquares, setOptionSquares] = useState<Record<string, any>>({})
+    const [rightClickedSquares, setRightClickedSquares] = useState<Record<string, any>>({})
+    const [showPromotionDialog, setShowPromotionDialog] = useState(false)
+    // useEffect(() => {
+    //     const stockfish = new Worker("/stockfish.js");
+    //     const DEPTH = 8; // Search depth
+    //     const FEN_POSITION =
+    //         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    //     const wasmPath = '/stockfish.wasm';
+
+    //     stockfish.postMessage({
+    //         type: 'init',
+    //         wasmPath,
+    //     });
+    //     stockfish.postMessage("uci");
+    //     stockfish.postMessage(`position fen ${FEN_POSITION}`);
+    //     stockfish.postMessage(`go depth ${DEPTH}`);
+
+    //     stockfish.onmessage = (e) => {
+    //         console.log(e.data); // in the console output you will see `bestmove e2e4` message
+    //     };
+    // }, []);
+    // const safeGameMutate = (modify: (game: Chess) => void) => {
+    //     setGame((g) => {
+    //         const updatedGame = new Chess(g.fen()) // Ensure it's a Chess instance
+    //         modify(updatedGame)
+    //         return updatedGame
+    //     })
+    // }
 
     const times = useMemo(() => {
         const timeRegex = /\[%clk\s*([0-9]+:[0-9]+:[0-9]+(?:\.[0-9]+)?)\]/g;
@@ -92,7 +137,133 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         setFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
         game.reset();
     }, [game]);
+    const getMoveOptions = (square: string) => {
+        const moves = game.moves({ square, verbose: true })
+        if (moves.length === 0) {
+            setOptionSquares({})
+            return false
+        }
 
+        const newSquares: Record<string, any> = {}
+
+        moves.forEach((move) => {
+            newSquares[move.to] = {
+                background: game.get(move.to) && game.get(move.to).color !== game.get(square).color
+                    ? "radial-gradient(circle, rgba(0,0,0,.1) 85%, transparent 85%)"
+                    : "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
+                borderRadius: "50%",
+            }
+        })
+
+        newSquares[square] = {
+            background: "rgba(255, 255, 0, 0.4)",
+            boxShadow: "0 0 10px rgba(255, 255, 0, 0.7)", // Highlight selected square
+        }
+
+        setOptionSquares(newSquares)
+        return true
+    }
+
+    const onSquareClick = (square: string) => {
+        setRightClickedSquares({})
+
+        if (!moveFrom) {
+            // If no piece is selected, select the piece
+            const hasMoveOptions = getMoveOptions(square)
+            if (hasMoveOptions) setMoveFrom(square)
+            return
+        }
+
+        if (!moveTo) {
+            // Check if valid move
+            const moves = game.moves({ verbose: true })
+            const foundMove = moves.find((move) => move.from === moveFrom && move.to === square)
+            if (!foundMove) {
+                const hasMoveOptions = getMoveOptions(square)
+                if (hasMoveOptions) setMoveFrom(square)
+                return
+            }
+
+            setMoveTo(square)
+
+            // If promotion move, show promotion dialog
+            if ((foundMove.color === "w" && foundMove.piece === "p" && square[1] === "8") ||
+                (foundMove.color === "b" && foundMove.piece === "p" && square[1] === "1")) {
+                setShowPromotionDialog(true)
+                return
+            }
+
+            // Normal move
+            const gameCopy = new Chess(game.fen())
+            const moveResult = gameCopy.move({ from: moveFrom, to: square, promotion: "q" })
+            if (!moveResult) {
+                const hasMoveOptions = getMoveOptions(square)
+                if (hasMoveOptions) setMoveFrom(square)
+                return
+            }
+
+            setGame(gameCopy)
+            setFen(gameCopy.fen())
+            setMoveFrom("")
+            setMoveTo(null)
+            setOptionSquares({})
+            return
+        }
+    }
+
+    const onPromotionPieceSelect = (piece?: string) => {
+        if (piece && moveFrom && moveTo) {
+            const gameCopy = new Chess(game.fen())
+            gameCopy.move({
+                from: moveFrom,
+                to: moveTo!,
+                promotion: piece ? piece.toLowerCase().charAt(1) : "q"
+            })
+            setGame(gameCopy)
+            setFen(gameCopy.fen())
+            return true;
+        }
+        setMoveFrom("")
+        setMoveTo(null)
+        setShowPromotionDialog(false)
+        setOptionSquares({})
+        return false;
+    }
+    const onPieceDragBegin = (piece: string, sourceSquare: string) => {
+        setMoveFrom(sourceSquare);
+        getMoveOptions(sourceSquare);
+    }
+    const onPieceDragEnd = () => {
+        setMoveFrom("");
+        setMoveTo(null);
+        setOptionSquares({});
+    }
+    const onPieceDrop = (sourceSquare: string, targetSquare: string) => {
+        const legalMoves = game.moves({ square: sourceSquare, verbose: true });
+        const isLegalMove = legalMoves.some(move => move.to === targetSquare);
+
+        if (!isLegalMove) {
+            return false;
+        }
+
+        const gameCopy = new Chess(game.fen());
+        const moveResult = gameCopy.move({
+            from: sourceSquare,
+            to: targetSquare,
+            promotion: "q"
+        });
+
+        if (moveResult) {
+            setGame(gameCopy);
+            setFen(gameCopy.fen())
+            setMoveFrom("");
+            setMoveTo(null);
+            setOptionSquares({});
+            return true;
+        } else {
+            return false;
+        }
+    }
     return (
         <GameContext.Provider
             value={{
@@ -107,6 +278,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                 nextMove,
                 previousMove,
                 resetBoard,
+
+                moveFrom,
+                moveTo,
+                optionSquares,
+                rightClickedSquares,
+                setRightClickedSquares,
+                showPromotionDialog,
+                onSquareClick,
+                onPromotionPieceSelect,
+                getMoveOptions,
+                onPieceDragBegin,
+                onPieceDragEnd,
+                onPieceDrop,
             }}
         >
             {children}
