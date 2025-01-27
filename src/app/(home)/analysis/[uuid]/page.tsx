@@ -21,21 +21,12 @@ const Home: React.FC = () => {
         nextMove,
         previousMove,
         resetBoard,
-        setPgn,
     } = useGameContext();
 
     useEffect(() => {
         const loadGame = async () => {
             if (!uuid) return;
-
-            const gameData = await fetchGameByUuid(uuid as string);
-            if (gameData) {
-                setPgn(gameData.pgn);
-
-                const newGame = new Chess();
-                newGame.loadPgn(gameData.pgn);
-                goToMove(0);
-            }
+            await fetchGameByUuid(uuid as string);
         };
 
         loadGame();

@@ -185,6 +185,14 @@ const ChessboardComponent: FC<ChessboardComponentProps> = ({ fen }) => {
                         return false;
                     }
                 }}
+                onSquareRightClick={(square) => {
+                    setRightClickedSquares({
+                        [square]: {
+                            background: "rgba(255, 0, 0, 0.6)",
+                            boxShadow: "0 0 10px rgba(255, 0, 0, 0.9)",
+                        }
+                    });
+                }}
                 arePiecesDraggable={true}
                 customDarkSquareStyle={{
                     backgroundColor: "#779952"

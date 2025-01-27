@@ -14,7 +14,6 @@ interface GameContextType {
     nextMove: () => void;
     previousMove: () => void;
     resetBoard: () => void;
-    setPgn: (pgn: string) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -40,22 +39,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         return times;
     }, [pgn]);
 
-    const setPgn = (newPgn: string) => {
-        setPgnState(newPgn);
-        if (newPgn !== pgn) {  // Update the game only if the PGN changes
-            const newGame = new Chess();
-            newGame.loadPgn(newPgn);
-            setGame(newGame);
-            setFen(newGame.fen());
-            setMoves(newGame.history());
-        }
-    };
-
     const fetchGameByUuid = useCallback(async (uuid: string) => {
         try {
             const gameData = await db.chessGames.get(uuid);
             if (gameData) {
-                setPgn(gameData.pgn);
+                setPgnState(gameData.pgn);
                 if (game.pgn() !== gameData.pgn) {
                     const newGame = new Chess();
                     newGame.loadPgn(gameData.pgn);
@@ -119,7 +107,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                 nextMove,
                 previousMove,
                 resetBoard,
-                setPgn,
             }}
         >
             {children}
