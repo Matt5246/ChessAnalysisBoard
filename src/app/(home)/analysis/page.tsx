@@ -173,7 +173,13 @@ export default function Home() {
               </div>
             </Card>
             {moves.length > 0 && (
-              <MoveList moves={moves} currentMoveIndex={currentMoveIndex} goToMove={goToMove} />)
+              <MoveList moves={moves} currentMoveIndex={currentMoveIndex} goToMove={goToMove} times={[]} nextMove={function (): void {
+                throw new Error('Function not implemented.')
+              }} previousMove={function (): void {
+                throw new Error('Function not implemented.')
+              }} resetBoard={function (): void {
+                throw new Error('Function not implemented.')
+              }} />)
             }
           </div>
         </div>

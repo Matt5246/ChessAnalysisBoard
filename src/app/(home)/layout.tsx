@@ -18,6 +18,7 @@ import { usePathname } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 import Link from 'next/link'
 import React from 'react'
+import { GameProvider } from '@/context/GameContext'
 
 interface PageProps {
   children: ReactNode
@@ -56,7 +57,7 @@ export default function Page({ children }: PageProps) {
             </Breadcrumb>
           </div>
         </header>
-        <div className="p-5">{children}</div>
+        <div className="p-5"><GameProvider>{children}</GameProvider></div>
       </SidebarInset>
     </SidebarProvider>
   )

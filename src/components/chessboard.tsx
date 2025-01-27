@@ -20,32 +20,32 @@ const ChessboardComponent: FC<ChessboardComponentProps> = ({ fen }) => {
     useEffect(() => {
         setGame(new Chess(fen))
     }, [fen])
-    useEffect(() => {
-        const stockfish = new Worker("/stockfish.js");
-        const DEPTH = 8; // number of halfmoves the engine looks ahead
-        const FEN_POSITION =
-            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        const wasmPath = '/stockfish.wasm';
+    // useEffect(() => {
+    //     const stockfish = new Worker("/stockfish.js");
+    //     const DEPTH = 8; // Search depth
+    //     const FEN_POSITION =
+    //         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    //     const wasmPath = '/stockfish.wasm';
 
-        stockfish.postMessage({
-            type: 'init',
-            wasmPath,
-        });
-        stockfish.postMessage("uci");
-        stockfish.postMessage(`position fen ${FEN_POSITION}`);
-        stockfish.postMessage(`go depth ${DEPTH}`);
+    //     stockfish.postMessage({
+    //         type: 'init',
+    //         wasmPath,
+    //     });
+    //     stockfish.postMessage("uci");
+    //     stockfish.postMessage(`position fen ${FEN_POSITION}`);
+    //     stockfish.postMessage(`go depth ${DEPTH}`);
 
-        stockfish.onmessage = (e) => {
-            console.log(e.data); // in the console output you will see `bestmove e2e4` message
-        };
-    }, []);
-    const safeGameMutate = (modify: (game: Chess) => void) => {
-        setGame((g) => {
-            const updatedGame = new Chess(g.fen()) // Ensure it's a Chess instance
-            modify(updatedGame)
-            return updatedGame
-        })
-    }
+    //     stockfish.onmessage = (e) => {
+    //         console.log(e.data); // in the console output you will see `bestmove e2e4` message
+    //     };
+    // }, []);
+    // const safeGameMutate = (modify: (game: Chess) => void) => {
+    //     setGame((g) => {
+    //         const updatedGame = new Chess(g.fen()) // Ensure it's a Chess instance
+    //         modify(updatedGame)
+    //         return updatedGame
+    //     })
+    // }
 
     const getMoveOptions = (square: string) => {
         const moves = game.moves({ square, verbose: true })
@@ -156,6 +156,36 @@ const ChessboardComponent: FC<ChessboardComponentProps> = ({ fen }) => {
                 }}
                 promotionToSquare={moveTo}
                 showPromotionDialog={showPromotionDialog}
+                arePremovesAllowed={true}
+                clearPremovesOnRightClick={true}
+                onPieceDragBegin={(piece, sourceSquare) => {
+                    setMoveFrom(sourceSquare);
+                    getMoveOptions(sourceSquare);
+                }}
+                onPieceDragEnd={() => {
+                    setMoveFrom("");
+                    setMoveTo(null);
+                    setOptionSquares({});
+                }}
+                onPieceDrop={(sourceSquare, targetSquare) => {
+                    const gameCopy = new Chess(game.fen());
+                    const moveResult = gameCopy.move({
+                        from: sourceSquare,
+                        to: targetSquare,
+                        promotion: "q"
+                    });
+
+                    if (moveResult) {
+                        setGame(gameCopy);
+                        setMoveFrom("");
+                        setMoveTo(null);
+                        setOptionSquares({});
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }}
+                arePiecesDraggable={true}
                 customDarkSquareStyle={{
                     backgroundColor: "#779952"
                 }}
@@ -163,20 +193,6 @@ const ChessboardComponent: FC<ChessboardComponentProps> = ({ fen }) => {
                     backgroundColor: "#edeed1"
                 }}
             />
-            <button onClick={() => {
-                safeGameMutate((game) => game.reset())
-                setOptionSquares({})
-                setRightClickedSquares({})
-            }}>
-                Reset
-            </button>
-            <button onClick={() => {
-                safeGameMutate((game) => game.undo())
-                setOptionSquares({})
-                setRightClickedSquares({})
-            }}>
-                Undo
-            </button>
         </div>
     )
 }

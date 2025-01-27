@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
 
 const nextConfig: NextConfig = {
   webpack(config, { isServer }) {
+    config.plugins.push(new MiniCssExtractPlugin());
     // Add Webpack loader for workers
     config.module.rules.push({
       test: /stockfish\.js$/, // Regex to match the worker file
