@@ -49,14 +49,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     const [rightClickedSquares, setRightClickedSquares] = useState<Record<string, any>>({})
     const [showPromotionDialog, setShowPromotionDialog] = useState(false)
 
-    const engineRef = useRef<Engine | null>(null);
-
     useEffect(() => {
         const newEngine = new Engine();
-        engineRef.current = newEngine;
-        const engine = engineRef.current;
 
-        if (engine || newEngine) {
+        if (newEngine) {
 
             newEngine.onReady(() => {
                 console.log(`Evaluating new position: ${fen}`);
@@ -67,7 +63,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                 console.log("Engine message:", data);
             });
         }
-    }, [game]);
+    }, [game, fen]);
 
     const times = useMemo(() => {
         const timeRegex = /\[%clk\s*([0-9]+:[0-9]+:[0-9]+(?:\.[0-9]+)?)\]/g;
