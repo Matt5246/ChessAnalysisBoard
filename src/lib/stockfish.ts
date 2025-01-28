@@ -40,8 +40,8 @@ export default class Engine {
     this.init();
   }
 
-  private transformSFMessageData(e) {
-    const uciMessage = e?.data ?? e;
+  private transformSFMessageData(e: MessageEvent | string): EngineMessage {
+    const uciMessage = e instanceof MessageEvent ? e.data : e;
 
     return {
       uciMessage,

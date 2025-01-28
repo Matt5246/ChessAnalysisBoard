@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Chess } from 'chess.js';
+import { Chess, Square } from 'chess.js';
 import { db } from '@/lib/db';
 import Engine from '@/lib/stockfish';
 
@@ -22,12 +22,12 @@ interface GameContextType {
     rightClickedSquares: Record<string, any>;
     setRightClickedSquares: (squares: Record<string, any>) => void;
     showPromotionDialog: boolean;
-    onSquareClick: (square: string) => void;
+    onSquareClick: (square: Square) => void;
     onPromotionPieceSelect: (piece?: string) => void;
-    onPieceDragBegin: (piece: string, sourceSquare: string) => void;
+    onPieceDragBegin: (piece: string, sourceSquare: Square) => void;
     onPieceDragEnd: () => void;
-    onPieceDrop: (sourceSquare: string, targetSquare: string) => boolean;
-    getMoveOptions: (square: string) => boolean;
+    onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+    getMoveOptions: (square: Square) => boolean;
 
 }
 
@@ -129,7 +129,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         game.reset();
     }, [game]);
 
-    const getMoveOptions = (square: string) => {
+    const getMoveOptions = (square: Square) => {
         const moves = game.moves({ square, verbose: true })
         if (moves.length === 0) {
             setOptionSquares({})
@@ -138,9 +138,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
         const newSquares: Record<string, any> = {}
 
-        moves.forEach((move) => {
+        moves.forEach((move: any) => {
+            const targetSquare = game.get(move.to);
+            const sourceSquare = game.get(square);
             newSquares[move.to] = {
-                background: game.get(move.to) && game.get(move.to).color !== game.get(square).color
+                background: targetSquare && sourceSquare && targetSquare.color !== sourceSquare.color
                     ? "radial-gradient(circle, rgba(0,0,0,.1) 85%, transparent 85%)"
                     : "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
                 borderRadius: "50%",
@@ -156,7 +158,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         return true
     }
 
-    const onSquareClick = (square: string) => {
+    const onSquareClick = (square: Square) => {
         setRightClickedSquares({})
 
         if (!moveFrom) {
@@ -221,7 +223,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         setOptionSquares({})
         return false;
     }
-    const onPieceDragBegin = (piece: string, sourceSquare: string) => {
+    const onPieceDragBegin = (piece: string, sourceSquare: Square) => {
         setMoveFrom(sourceSquare);
         getMoveOptions(sourceSquare);
     }
@@ -230,7 +232,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         setMoveTo(null);
         setOptionSquares({});
     }
-    const onPieceDrop = (sourceSquare: string, targetSquare: string) => {
+    const onPieceDrop = (sourceSquare: Square, targetSquare: Square) => {
         const legalMoves = game.moves({ square: sourceSquare, verbose: true });
         const isLegalMove = legalMoves.some(move => move.to === targetSquare);
 
