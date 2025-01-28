@@ -1,28 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
 import Chessboard from '@/components/chessboard';
-import { useParams } from 'next/navigation';
 import MoveList from '@/components/MoveList';
-import { useGameContext } from '@/context/GameContext';
-import { Chess } from 'chess.js';
 
 const Home: React.FC = () => {
 
     return (
-        <div className="bg-background p-4 md:p-8">
-            <div className="max-w-9xl mx-auto space-y-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-center mb-8">Chess Analysis Board</h1>
-                <div className="flex justify-center">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-9xl w-full">
-                        <div className="space-y-8 lg:col-span-1">
-                            <Chessboard />
-                        </div>
-                        <div className="space-y-8 lg:col-span-1">
-                            <MoveList />
-                        </div>
-                    </div>
-                </div>
+        <div className="bg-background md:p-8 flex flex-col md:flex-row justify-center">
+            <div className="md:w-3/5 w-full">
+                <Chessboard />
+            </div>
+            <div className="md:w-1/5 w-full md:ml-4 mt-4 md:mt-0 md:order-last">
+                <MoveList />
             </div>
         </div>
     );

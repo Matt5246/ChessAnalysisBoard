@@ -70,7 +70,7 @@ const MoveList: FC<MoveListProps> = ({
     useKey('ArrowLeft', previousMove)
     useKey('ArrowRight', nextMove)
     return (
-        <Card className="flex flex-col max-h-[81svh] max-w-[40vh] bg-background select-none">
+        <Card className="flex flex-col max-h-[81svh] min-w-[40vh] bg-background select-none">
             <div className="p-4 border-b space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">

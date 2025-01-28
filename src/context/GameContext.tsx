@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { db } from '@/lib/db';
+import Engine from '@/lib/stockfish';
 
 interface GameContextType {
     game: Chess;
@@ -47,32 +48,26 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     const [optionSquares, setOptionSquares] = useState<Record<string, any>>({})
     const [rightClickedSquares, setRightClickedSquares] = useState<Record<string, any>>({})
     const [showPromotionDialog, setShowPromotionDialog] = useState(false)
-    // useEffect(() => {
-    //     const stockfish = new Worker("/stockfish.js");
-    //     const DEPTH = 8; // Search depth
-    //     const FEN_POSITION =
-    //         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    //     const wasmPath = '/stockfish.wasm';
 
-    //     stockfish.postMessage({
-    //         type: 'init',
-    //         wasmPath,
-    //     });
-    //     stockfish.postMessage("uci");
-    //     stockfish.postMessage(`position fen ${FEN_POSITION}`);
-    //     stockfish.postMessage(`go depth ${DEPTH}`);
+    const engineRef = useRef<Engine | null>(null);
 
-    //     stockfish.onmessage = (e) => {
-    //         console.log(e.data); // in the console output you will see `bestmove e2e4` message
-    //     };
-    // }, []);
-    // const safeGameMutate = (modify: (game: Chess) => void) => {
-    //     setGame((g) => {
-    //         const updatedGame = new Chess(g.fen()) // Ensure it's a Chess instance
-    //         modify(updatedGame)
-    //         return updatedGame
-    //     })
-    // }
+    useEffect(() => {
+        const newEngine = new Engine();
+        engineRef.current = newEngine;
+        const engine = engineRef.current;
+
+        if (engine || newEngine) {
+
+            newEngine.onReady(() => {
+                console.log(`Evaluating new position: ${fen}`);
+                newEngine.evaluatePosition(fen, 12);
+            });
+
+            newEngine.onMessage((data) => {
+                console.log("Engine message:", data);
+            });
+        }
+    }, [game]);
 
     const times = useMemo(() => {
         const timeRegex = /\[%clk\s*([0-9]+:[0-9]+:[0-9]+(?:\.[0-9]+)?)\]/g;
@@ -137,6 +132,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         setFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
         game.reset();
     }, [game]);
+
     const getMoveOptions = (square: string) => {
         const moves = game.moves({ square, verbose: true })
         if (moves.length === 0) {
