@@ -19,25 +19,16 @@ import useKey from '@/hooks/use-key'
 import { useParams } from 'next/navigation'
 import { useGameContext } from '@/context/GameContext'
 
-interface MoveListProps {
-    bestMove?: {
-        move: string
-        score: number
-        line: string[]
-    }
-}
 
-const MoveList: FC<MoveListProps> = ({
-    bestMove,
-}) => {
+const MoveList: FC = () => {
     const { uuid } = useParams();
     const {
-        game,
-        pgn,
+        engineAnalysis,
         currentMoveIndex,
-        fen,
+        settings,
         moves,
         times,
+        setSettings,
         fetchGameByUuid,
         goToMove,
         nextMove,
@@ -53,7 +44,28 @@ const MoveList: FC<MoveListProps> = ({
 
         loadGame();
     }, [uuid]);
+    console.log(engineAnalysis)
+    const parseUciMessage = (uciMessage: string) => {
+        const parts = uciMessage.split(' ');
+        const depth = parts[2];
+        const multipv = parts[6];
+        const scoreIndex = parts.indexOf('score');
+        const positionEvaluation = scoreIndex !== -1 && parts[scoreIndex + 1] === 'cp' ? parts[scoreIndex + 2] : undefined;
+        const possibleMate = scoreIndex !== -1 && parts[scoreIndex + 1] === 'mate' ? parts[scoreIndex + 2] : undefined;
+        const pvIndex = parts.indexOf('pv');
+        const pv = pvIndex !== -1 ? parts.slice(pvIndex + 1).join(' ') : '';
 
+        return {
+            depth,
+            multipv,
+            positionEvaluation,
+            possibleMate,
+            pv,
+            uciMessage,
+        };
+    };
+
+    const analysis = engineAnalysis.map((item: any) => parseUciMessage(item.uciMessage));
     const [engineEnabled, setEngineEnabled] = useState(false)
     const [depth, setDepth] = useState("15")
     const movesPairs = moves.reduce((pairs, move, index) => {
@@ -69,6 +81,21 @@ const MoveList: FC<MoveListProps> = ({
 
     useKey('ArrowLeft', previousMove)
     useKey('ArrowRight', nextMove)
+
+    const handleDepthChange = (newDepth: string) => {
+        setDepth(newDepth);
+        setSettings({
+            ...settings,
+            depth: Number(newDepth),
+        });
+    };
+    const handleEngineToggle = () => {
+        setEngineEnabled(!engineEnabled);
+        setSettings({
+            ...settings,
+            stockfishEnabled: !engineEnabled,
+        });
+    }
     return (
         <Card className="flex flex-col max-h-[81svh] min-w-[40vh] bg-background select-none">
             <div className="p-4 border-b space-y-4">
@@ -79,7 +106,7 @@ const MoveList: FC<MoveListProps> = ({
                     </div>
                     <Switch
                         checked={engineEnabled}
-                        onCheckedChange={setEngineEnabled}
+                        onCheckedChange={handleEngineToggle}
                         aria-label="Toggle engine analysis"
                     />
                 </div>
@@ -90,7 +117,7 @@ const MoveList: FC<MoveListProps> = ({
                             <Label htmlFor="depth">Depth</Label>
                             <Select
                                 value={depth}
-                                onValueChange={setDepth}
+                                onValueChange={handleDepthChange}
                             >
                                 <SelectTrigger className="w-24">
                                     <SelectValue placeholder="Depth" />
@@ -105,26 +132,34 @@ const MoveList: FC<MoveListProps> = ({
                             </Select>
                         </div>
 
-                        {bestMove && (
-                            <div className="space-y-2 bg-muted p-3 rounded-lg">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Best move:</span>
-                                    <span className="font-medium">{bestMove.move}</span>
+                        {analysis && (
+                            analysis.map((analysisItem, index) => (
+                                <div key={index} className="space-y-2 bg-muted p-3 rounded-lg">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Depth:</span>
+                                        <span className="font-medium">{analysisItem.depth}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Evaluation:</span>
+                                        <span className={cn(
+                                            "font-medium",
+                                            Number(analysisItem?.positionEvaluation) > 0 ? "text-green-500" : "text-red-500"
+                                        )}>
+                                            {Number(analysisItem?.positionEvaluation) > 0 ? "+" : ""}{Number(analysisItem.positionEvaluation)}
+                                        </span>
+                                    </div>
+                                    {analysisItem.possibleMate && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Mate in:</span>
+                                            <span className="font-medium">{analysisItem.possibleMate}</span>
+                                        </div>
+                                    )}
+                                    <div className="text-sm">
+                                        <span className="text-muted-foreground">Line: </span>
+                                        <span className="font-medium">{analysisItem.pv}</span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Evaluation:</span>
-                                    <span className={cn(
-                                        "font-medium",
-                                        bestMove.score > 0 ? "text-green-500" : "text-red-500"
-                                    )}>
-                                        {bestMove.score > 0 ? "+" : ""}{bestMove.score.toFixed(1)}
-                                    </span>
-                                </div>
-                                <div className="text-sm">
-                                    <span className="text-muted-foreground">Line: </span>
-                                    <span className="font-medium">{bestMove.line.join(" ")}</span>
-                                </div>
-                            </div>
+                            ))
                         )}
                     </div>
                 )}

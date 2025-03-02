@@ -8,7 +8,7 @@ if (typeof window !== "undefined") {
     }
   }
 
-type EngineMessage = {
+export type EngineMessage = {
   uciMessage: string;
   bestMove?: string;
   ponder?: string;
@@ -16,6 +16,8 @@ type EngineMessage = {
   possibleMate?: string;
   pv?: string;
   depth: number;
+  multipv: number;
+  wdl?: number[];
 };
 
 export default class Engine {
@@ -34,13 +36,13 @@ export default class Engine {
     this.onMessage = (callback) => {
       if (!this.stockfish) return;
       this.stockfish.addEventListener("message", (e) => {
-        callback(this.transformSFMessageData(e));
+        callback(this.messageData(e));
       });
     };
     this.init();
   }
 
-  private transformSFMessageData(e: MessageEvent | string): EngineMessage {
+  private messageData(e: MessageEvent | string): EngineMessage {
     const uciMessage = e instanceof MessageEvent ? e.data : e;
 
     return {
@@ -51,6 +53,8 @@ export default class Engine {
       possibleMate: uciMessage.match(/mate\s+(\S+)/)?.[1],
       pv: uciMessage.match(/ pv\s+(.*)/)?.[1],
       depth: Number(uciMessage.match(/ depth\s+(\S+)/)?.[1]) ?? 0,
+      multipv: Number(uciMessage.match(/ multipv\s+(\S+)/)?.[1]) ?? 1, // Extract multipv value
+      wdl: uciMessage.match(/wdl\s+(\d+)\s+(\d+)\s+(\d+)/)?.slice(1).map(Number), // Extract WDL
     };
   }
 
@@ -58,6 +62,9 @@ export default class Engine {
     if (!this.stockfish) return;
     this.stockfish.postMessage("uci");
     this.stockfish.postMessage("isready");
+    this.stockfish.postMessage("setoption name MultiPV value 3");
+    this.stockfish.postMessage("setoption name UCI_showWDL value true");
+
     this.onMessage(({ uciMessage }) => {
       if (uciMessage === "readyok") {
         this.isReady = true;

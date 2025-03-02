@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Chess, Square } from 'chess.js';
 import { db } from '@/lib/db';
-import Engine from '@/lib/stockfish';
+import Engine, { EngineMessage } from '@/lib/stockfish';
 
 interface GameContextType {
     game: Chess;
@@ -15,7 +15,7 @@ interface GameContextType {
     nextMove: () => void;
     previousMove: () => void;
     resetBoard: () => void;
-
+    engineAnalysis: EngineMessage[];
     moveFrom: string;
     moveTo: string | null;
     optionSquares: Record<string, any>;
@@ -28,7 +28,8 @@ interface GameContextType {
     onPieceDragEnd: () => void;
     onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
     getMoveOptions: (square: Square) => boolean;
-
+    setSettings: (settings: { stockfishEnabled: boolean; depth: number }) => void;
+    settings: { stockfishEnabled: boolean; depth: number };
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -48,22 +49,33 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     const [optionSquares, setOptionSquares] = useState<Record<string, any>>({})
     const [rightClickedSquares, setRightClickedSquares] = useState<Record<string, any>>({})
     const [showPromotionDialog, setShowPromotionDialog] = useState(false)
+    const [engineAnalysis, setEngineAnalysis] = useState<EngineMessage[]>([]);
+    const [settings, setSettings] = useState({ stockfishEnabled: false, depth: 15 });
 
     useEffect(() => {
-        const newEngine = new Engine();
-
-        if (newEngine) {
-
-            newEngine.onReady(() => {
-                console.log(`Evaluating new position: ${fen}`);
-                newEngine.evaluatePosition(fen, 12);
-            });
-
-            newEngine.onMessage((data) => {
-                console.log("Engine message:", data);
-            });
+        if (settings.stockfishEnabled) {
+            const newEngine = new Engine();
+            if (newEngine) {
+                newEngine.onReady(() => {
+                    console.log(`Evaluating new position: ${game.fen()}`);
+                    newEngine.evaluatePosition(game.fen(), settings.depth);
+                });
+                newEngine.onMessage((message: EngineMessage) => {
+                    if (message.multipv) {
+                        setEngineAnalysis((prev) => {
+                            const updatedAnalysis = [...prev];
+                            updatedAnalysis[message.multipv - 1] = message;
+                            return updatedAnalysis;
+                        });
+                    } else if (message.bestMove) {
+                        console.log("Best move:", message.bestMove);
+                        console.log("Ponder:", message.ponder);
+                        console.log("Full analysis:", engineAnalysis);
+                    }
+                });
+            }
         }
-    }, [game, fen]);
+    }, [game.fen()]);
 
     const times = useMemo(() => {
         const timeRegex = /\[%clk\s*([0-9]+:[0-9]+:[0-9]+(?:\.[0-9]+)?)\]/g;
@@ -272,7 +284,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                 nextMove,
                 previousMove,
                 resetBoard,
-
+                engineAnalysis,
                 moveFrom,
                 moveTo,
                 optionSquares,
@@ -285,6 +297,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                 onPieceDragBegin,
                 onPieceDragEnd,
                 onPieceDrop,
+                setSettings: (settings) => setSettings(settings),
+                settings,
             }}
         >
             {children}
