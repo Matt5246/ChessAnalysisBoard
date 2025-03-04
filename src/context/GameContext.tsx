@@ -64,13 +64,17 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                     if (message.multipv) {
                         setEngineAnalysis((prev) => {
                             const updatedAnalysis = [...prev];
-                            updatedAnalysis[message.multipv - 1] = message;
+
+                            updatedAnalysis[message.multipv - 1] = {
+                                ...message,
+                                fen: game.fen(),
+                            }
                             return updatedAnalysis;
                         });
-                    } else if (message.bestMove) {
-                        console.log("Best move:", message.bestMove);
-                        console.log("Ponder:", message.ponder);
-                        console.log("Full analysis:", engineAnalysis);
+                    }
+                    if (message.possibleMate && message.multipv === 1) {
+                        console.log(`Mate in ${message.possibleMate} moves found!
+                            uciMessage: ${message.uciMessage}`);
                     }
                 });
             }

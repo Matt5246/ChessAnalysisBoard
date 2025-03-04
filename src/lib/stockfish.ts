@@ -18,6 +18,7 @@ export type EngineMessage = {
   depth: number;
   multipv: number;
   wdl?: number[];
+  fen?: string;
 };
 
 export default class Engine {
@@ -50,7 +51,7 @@ export default class Engine {
       bestMove: uciMessage.match(/bestmove\s+(\S+)/)?.[1],
       ponder: uciMessage.match(/ponder\s+(\S+)/)?.[1],
       positionEvaluation: uciMessage.match(/cp\s+(\S+)/)?.[1],
-      possibleMate: uciMessage.match(/mate\s+(\S+)/)?.[1],
+      possibleMate: uciMessage.match(/mate\s+(-?\d+)/)?.[1],
       pv: uciMessage.match(/ pv\s+(.*)/)?.[1],
       depth: Number(uciMessage.match(/ depth\s+(\S+)/)?.[1]) ?? 0,
       multipv: Number(uciMessage.match(/ multipv\s+(\S+)/)?.[1]) ?? 1, // Extract multipv value
@@ -64,6 +65,7 @@ export default class Engine {
     this.stockfish.postMessage("isready");
     this.stockfish.postMessage("setoption name MultiPV value 3");
     this.stockfish.postMessage("setoption name UCI_showWDL value true");
+    
 
     this.onMessage(({ uciMessage }) => {
       if (uciMessage === "readyok") {
@@ -84,9 +86,11 @@ export default class Engine {
     if (depth > 24) depth = 24;
 
     if (this.stockfish) {
+      this.stockfish.postMessage("stop");
       this.stockfish.postMessage(`position fen ${fen}`);
       this.stockfish.postMessage(`go depth ${depth}`);
     }
+    
   }
 
   stop() {

@@ -16,7 +16,7 @@ export default function Home() {
   const [moves, setMoves] = useState<string[]>([])
   const [fen, setFen] = useState(game.fen())
   const boardContainerRef = useRef<HTMLDivElement>(null)
-  const [boardWidth, setBoardWidth] = useState(400)
+  const [boardWidth, setBoardWidth] = useState(300)
 
   useEffect(() => {
     const updateBoardWidth = () => {
@@ -173,13 +173,7 @@ export default function Home() {
               </div>
             </Card>
             {moves.length > 0 && (
-              <MoveList moves={moves} currentMoveIndex={currentMoveIndex} goToMove={goToMove} times={[]} nextMove={function (): void {
-                throw new Error('Function not implemented.')
-              }} previousMove={function (): void {
-                throw new Error('Function not implemented.')
-              }} resetBoard={function (): void {
-                throw new Error('Function not implemented.')
-              }} />)
+              <MoveList />)
             }
           </div>
         </div>

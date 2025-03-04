@@ -1,33 +1,35 @@
-'use client'
+'use client';
 
-import { FC, useEffect, useState } from 'react'
-import { Button } from './ui/button'
-import { Card } from './ui/card'
-import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { FC, useEffect, useState } from 'react';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from './ui/select'
-import { Switch } from './ui/switch'
-import { Label } from './ui/label'
-import { Cpu } from 'lucide-react'
-import useKey from '@/hooks/use-key'
-import { useParams } from 'next/navigation'
-import { useGameContext } from '@/context/GameContext'
-
+} from './ui/select';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
+import { Cpu } from 'lucide-react';
+import useKey from '@/hooks/use-key';
+import { useParams } from 'next/navigation';
+import { useGameContext } from '@/context/GameContext';
+import { Chess } from 'chess.js'; // Import chess.js
 
 const MoveList: FC = () => {
-    const { uuid } = useParams();
+    const params = useParams();
+    const uuid = params?.uuid;
     const {
         engineAnalysis,
         currentMoveIndex,
         settings,
         moves,
         times,
+        fen,
         setSettings,
         fetchGameByUuid,
         goToMove,
@@ -35,6 +37,10 @@ const MoveList: FC = () => {
         previousMove,
         resetBoard,
     } = useGameContext();
+
+    const [linesVisible, setLinesVisible] = useState(true);
+    const [engineEnabled, setEngineEnabled] = useState(false);
+    const [depth, setDepth] = useState('15');
 
     useEffect(() => {
         const loadGame = async () => {
@@ -44,7 +50,36 @@ const MoveList: FC = () => {
 
         loadGame();
     }, [uuid]);
-    console.log(engineAnalysis)
+
+    const convertUciToSan = (uciMoves: string[]): string[] => {
+        const tempGame = new Chess(fen)
+        const sanMoves: string[] = [];
+
+        for (const uciMove of uciMoves) {
+            // Skip empty or invalid UCI moves
+            if (!uciMove || uciMove.length < 4 || uciMove.length > 5) {
+                console.error(`Invalid UCI move: ${uciMove}`);
+                break;
+            }
+
+            try {
+                const move = tempGame.move({
+                    from: uciMove.slice(0, 2), // First two characters (e.g., "b7")
+                    to: uciMove.slice(2, 4),   // Next two characters (e.g., "b6")
+                    promotion: uciMove.length > 4 ? uciMove[4] : undefined, // Handle promotions
+                });
+                if (move) {
+                    sanMoves.push(move.san);
+                }
+            } catch (error) {
+                console.error(`Invalid move: ${uciMove}`, error);
+                break;
+            }
+        }
+
+        return sanMoves;
+    };
+
     const parseUciMessage = (uciMessage: string) => {
         const parts = uciMessage.split(' ');
         const depth = parts[2];
@@ -55,32 +90,39 @@ const MoveList: FC = () => {
         const pvIndex = parts.indexOf('pv');
         const pv = pvIndex !== -1 ? parts.slice(pvIndex + 1).join(' ') : '';
 
+        const pvMoves = pv.split(' ');
+        let sanPv = pv;
+        const sanMoves = convertUciToSan(pvMoves);
+        if (sanMoves.length > 0) {
+            sanPv = sanMoves.join(' ');
+        }
+
+        console.log("pv:", pv, "sanPv:", sanPv)
         return {
-            depth,
-            multipv,
-            positionEvaluation,
-            possibleMate,
-            pv,
+            depth: Number(depth),
+            multipv: Number(multipv),
+            positionEvaluation: positionEvaluation ? Number(positionEvaluation) : undefined,
+            possibleMate: possibleMate ? Number(possibleMate) : undefined,
+            pv: sanPv, // Use SAN for PV
             uciMessage,
         };
     };
 
     const analysis = engineAnalysis.map((item: any) => parseUciMessage(item.uciMessage));
-    const [engineEnabled, setEngineEnabled] = useState(false)
-    const [depth, setDepth] = useState("15")
-    const movesPairs = moves.reduce((pairs, move, index) => {
-        const pairIndex = Math.floor(index / 2)
-        if (!pairs[pairIndex]) {
-            pairs[pairIndex] = { white: move, black: null, whiteTime: times[index], blackTime: null }
-        } else {
-            pairs[pairIndex].black = move
-            pairs[pairIndex].blackTime = times[index]
-        }
-        return pairs
-    }, [] as { white: string; black: string | null; whiteTime: string; blackTime: string | null }[])
 
-    useKey('ArrowLeft', previousMove)
-    useKey('ArrowRight', nextMove)
+    const movesPairs = moves.reduce((pairs, move, index) => {
+        const pairIndex = Math.floor(index / 2);
+        if (!pairs[pairIndex]) {
+            pairs[pairIndex] = { white: move, black: null, whiteTime: times[index], blackTime: null };
+        } else {
+            pairs[pairIndex].black = move;
+            pairs[pairIndex].blackTime = times[index];
+        }
+        return pairs;
+    }, [] as { white: string; black: string | null; whiteTime: string; blackTime: string | null }[]);
+
+    useKey('ArrowLeft', previousMove);
+    useKey('ArrowRight', nextMove);
 
     const handleDepthChange = (newDepth: string) => {
         setDepth(newDepth);
@@ -89,15 +131,17 @@ const MoveList: FC = () => {
             depth: Number(newDepth),
         });
     };
+
     const handleEngineToggle = () => {
         setEngineEnabled(!engineEnabled);
         setSettings({
             ...settings,
             stockfishEnabled: !engineEnabled,
         });
-    }
+    };
+
     return (
-        <Card className="flex flex-col max-h-[81svh] min-w-[40vh] bg-background select-none">
+        <Card className="flex flex-col min-w-[40vh] bg-background select-none h-full">
             <div className="p-4 border-b space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -111,7 +155,7 @@ const MoveList: FC = () => {
                     />
                 </div>
 
-                {engineEnabled && (
+                {engineEnabled && linesVisible && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <Label htmlFor="depth">Depth</Label>
@@ -134,7 +178,7 @@ const MoveList: FC = () => {
 
                         {analysis && (
                             analysis.map((analysisItem, index) => (
-                                <div key={index} className="space-y-2 bg-muted p-3 rounded-lg">
+                                <div key={index} className="space-y-2 bg-muted p-3 rounded-lg relative">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">Depth:</span>
                                         <span className="font-medium">{analysisItem.depth}</span>
@@ -145,19 +189,20 @@ const MoveList: FC = () => {
                                             "font-medium",
                                             Number(analysisItem?.positionEvaluation) > 0 ? "text-green-500" : "text-red-500"
                                         )}>
-                                            {Number(analysisItem?.positionEvaluation) > 0 ? "+" : ""}{Number(analysisItem.positionEvaluation)}
+                                            {Number(analysisItem?.positionEvaluation) > 0 ? "+" : ""}{(Number(analysisItem.positionEvaluation) / 100).toFixed(2)}
                                         </span>
                                     </div>
+
+                                    <div className="text-sm truncate">
+                                        <span className="text-muted-foreground">Line: </span>
+                                        <span className="font-medium">{analysisItem.pv.length > 50 ? `${analysisItem.pv.slice(0, 50)}...` : analysisItem.pv}</span>
+                                    </div>
                                     {analysisItem.possibleMate && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Mate in:</span>
+                                        <div className="absolute bottom-3 right-3 flex justify-between text-sm font-bold text-purple-500">
+                                            <span className="">Mate in:</span>
                                             <span className="font-medium">{analysisItem.possibleMate}</span>
                                         </div>
                                     )}
-                                    <div className="text-sm">
-                                        <span className="text-muted-foreground">Line: </span>
-                                        <span className="font-medium">{analysisItem.pv}</span>
-                                    </div>
                                 </div>
                             ))
                         )}
@@ -229,7 +274,7 @@ const MoveList: FC = () => {
                 </div>
             </div>
         </Card>
-    )
-}
+    );
+};
 
-export default MoveList
+export default MoveList;
